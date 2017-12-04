@@ -10,6 +10,7 @@
 package com.amazon.asksdk.session;
 
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -34,10 +35,15 @@ import com.amazon.speech.ui.SimpleCard;
  * session interactions.
  */
 public class SessionSpeechlet implements SpeechletV2 {
+	
+
+    public final Gab[] gabs = {new Gab("Ace Leap Lesson Height","A Sleepless Night"), new Gab("Ace Lie Soap Eye","A Slice of Pie"), new Gab("Ace Nose Dorm","A Snowstorm"), new Gab("Ace Pea Ding Tea Kit","A Speeding Ticket"), new Gab("Ache Hand He Eye Pull","A Candy Apple"), new Gab("Ache Hick Kin Tub Hut","A Kick in the Butt"), new Gab("Ache Hood Sin Sew Fume Her","A Good Sense of Humor"), new Gab("Agree Nap Hull","A Green Apple"), new Gab("Bat Tree Snot Ink Looted","Batteries not included"), new Gab("Backed Ooze Queer Won","Back to Square One")};
+
     private static final Logger log = LoggerFactory.getLogger(SessionSpeechlet.class);
 
-    private static final String COLOR_KEY = "COLOR";
-    private static final String COLOR_SLOT = "Color";
+    private static final String QUESTION_KEY = "QUESTION";
+    private static final String ANSWER_KEY = "ANSWER";
+    private static final String ANSWER_SLOT = "movieAnswer";
 
     @Override
     public void onSessionStarted(SpeechletRequestEnvelope<SessionStartedRequest> requestEnvelope) {
@@ -50,7 +56,7 @@ public class SessionSpeechlet implements SpeechletV2 {
     public SpeechletResponse onLaunch(SpeechletRequestEnvelope<LaunchRequest> requestEnvelope) {
         log.info("onLaunch requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
                 requestEnvelope.getSession().getSessionId());
-        return getWelcomeResponse();
+        return getWelcomeResponse(requestEnvelope.getSession());
     }
 
     @Override
@@ -65,36 +71,64 @@ public class SessionSpeechlet implements SpeechletV2 {
 
         // Note: If the session is started with an intent, no welcome message will be rendered;
         // rather, the intent specific response will be returned.
-        if ("MyColorIsIntent".equals(intentName)) {
-            return setColorInSession(intent, session);
-        } else if ("WhatsMyColorIntent".equals(intentName)) {
-            return getColorFromSession(intent, session);
+        if ("AnswerIntent".equals(intentName)) {
+            return handleAnswerIntent(intent, session);
+        } else if ("DontKnowIntent".equals(intentName)) {
+            return handleDontKnow(intent, session);
+        } else if ("AMAZON.RepeatIntent".equals(intentName)) {
+            return handleRepeat(intent, session);
+        } else if ("AMAZON.StopIntent".equals(intentName)) {
+        	return getSpeechletResponse("Your Score is 0", null, false);
         } else {
-            String errorSpeech = "This is unsupported.  Please try something else.";
+            String errorSpeech = intentName + " is unsupported.  Please try something else.";
             return getSpeechletResponse(errorSpeech, errorSpeech, true);
         }
     }
 
-    @Override
+    private SpeechletResponse handleRepeat(Intent intent, Session session) {
+        String repromptText = session.getAttribute(QUESTION_KEY).toString();
+        String speechText = repromptText;
+        return getSpeechletResponse(speechText, repromptText, true);
+	}
+
+	private SpeechletResponse handleDontKnow(Intent intent, Session session) {
+        String repromptText = getGabText(session);
+        String speechText = repromptText;
+        return getSpeechletResponse(speechText, repromptText, true);
+	}
+
+	@Override
     public void onSessionEnded(SpeechletRequestEnvelope<SessionEndedRequest> requestEnvelope) {
         log.info("onSessionEnded requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
                 requestEnvelope.getSession().getSessionId());
-        // any cleanup logic goes here
     }
-
+ 
+	public final Random r = new Random(306054743L);
+	
+    Gab getGab(){
+		return gabs[r.nextInt(gabs.length)];
+    }
+    
+    
+	String getGabText(Session session){
+    	Gab gab  = getGab();
+    	  session.setAttribute(QUESTION_KEY, gab.questionPeriods());
+          session.setAttribute(ANSWER_KEY, gab.answer);
+        return "Here's your next puzzle:\n\r " + gab.questionPeriods();
+    	
+    }
+    
     /**
      * Creates and returns a {@code SpeechletResponse} with a welcome message.
+     * @param session 
      *
      * @return SpeechletResponse spoken and visual welcome message
      */
-    private SpeechletResponse getWelcomeResponse() {
+    private SpeechletResponse getWelcomeResponse(Session session) {
         // Create the welcome message.
-        String speechText =
-                "Welcome to the Alexa Skills Kit sample. Please tell me your favorite color by "
-                        + "saying, my favorite color is red";
-        String repromptText =
-                "Please tell me your favorite color by saying, my favorite color is red";
-
+		
+        String repromptText = getGabText(session);
+        String speechText = "Welcome to Mad Gab, " +repromptText;
         return getSpeechletResponse(speechText, repromptText, true);
     }
 
@@ -104,66 +138,42 @@ public class SessionSpeechlet implements SpeechletV2 {
      *
      * @param intent
      *            intent for the request
+     * @param dontknow 
      * @return SpeechletResponse spoken and visual response the given intent
      */
-    private SpeechletResponse setColorInSession(final Intent intent, final Session session) {
+    private SpeechletResponse handleAnswerIntent(final Intent intent, final Session session) {
         // Get the slots from the intent.
         Map<String, Slot> slots = intent.getSlots();
 
         // Get the color slot from the list of slots.
-        Slot favoriteColorSlot = slots.get(COLOR_SLOT);
+        Slot answerSlot = slots.get(ANSWER_SLOT);
         String speechText, repromptText;
 
         // Check for favorite color and create output to user.
-        if (favoriteColorSlot != null) {
+        if (answerSlot != null) {
             // Store the user's favorite color in the Session and create response.
-            String favoriteColor = favoriteColorSlot.getValue();
-            session.setAttribute(COLOR_KEY, favoriteColor);
-            speechText =
-                    String.format("I now know that your favorite color is %s. You can ask me your "
-                            + "favorite color by saying, what's my favorite color?", favoriteColor);
-            repromptText =
-                    "You can ask me your favorite color by saying, what's my favorite color?";
+        	
+            String answer = answerSlot.getValue();
+            speechText = "";
+            if(answer != null && answer.equalsIgnoreCase(session.getAttribute(ANSWER_KEY).toString())) {
+            	speechText += "Correct! ";
+            } else {
+            	speechText += "Wrong! The answer was " + session.getAttribute(ANSWER_KEY).toString()+". ";
+            }
+            
+            repromptText = getGabText(session);
+            
+            speechText += repromptText;
 
         } else {
-            // Render an error since we don't know what the users favorite color is.
-            speechText = "I'm not sure what your favorite color is, please try again";
+            speechText = "Try answering the puzzle by saying which movie or book it is";
             repromptText =
-                    "I'm not sure what your favorite color is. You can tell me your favorite "
-                            + "color by saying, my favorite color is red";
+                    "Try answering the puzzle by saying which movie or book it is, you can skip this puzzle";
         }
 
         return getSpeechletResponse(speechText, repromptText, true);
     }
 
-    /**
-     * Creates a {@code SpeechletResponse} for the intent and get the user's favorite color from the
-     * Session.
-     *
-     * @param intent
-     *            intent for the request
-     * @return SpeechletResponse spoken and visual response for the intent
-     */
-    private SpeechletResponse getColorFromSession(final Intent intent, final Session session) {
-        String speechText;
-        boolean isAskResponse = false;
-
-        // Get the user's favorite color from the session.
-        String favoriteColor = (String) session.getAttribute(COLOR_KEY);
-
-        // Check to make sure user's favorite color is set in the session.
-        if (StringUtils.isNotEmpty(favoriteColor)) {
-            speechText = String.format("Your favorite color is %s. Goodbye.", favoriteColor);
-        } else {
-            // Since the user's favorite color is not set render an error message.
-            speechText =
-                    "I'm not sure what your favorite color is. You can say, my favorite color is "
-                            + "red";
-            isAskResponse = true;
-        }
-
-        return getSpeechletResponse(speechText, speechText, isAskResponse);
-    }
 
     /**
      * Returns a Speechlet response for a speech and reprompt text.

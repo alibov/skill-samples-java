@@ -30,7 +30,7 @@ public class SessionSpeechletRequestStreamHandler extends SpeechletRequestStream
          * Alexa Skill and put the relevant Application Ids in this Set.
          */
         supportedApplicationIds = new HashSet<String>();
-        // supportedApplicationIds.add("[unique-value-here]");
+        supportedApplicationIds.add("amzn1.ask.skill.15249954-08a4-4c11-aeab-5fa4091a80e3");
     }
 
     public SessionSpeechletRequestStreamHandler() {
