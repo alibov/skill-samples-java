@@ -1,20 +1,8 @@
-/**
-    Copyright 2014-2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-
-    Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance with the License. A copy of the License is located at
-
-        http://aws.amazon.com/apache2.0/
-
-    or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
- */
 package com.amazon.asksdk.session;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +16,6 @@ import com.amazon.speech.speechlet.SessionStartedRequest;
 import com.amazon.speech.speechlet.SpeechletV2;
 import com.amazon.speech.speechlet.SpeechletResponse;
 import com.amazon.speech.json.SpeechletRequestEnvelope;
-import com.amazon.speech.ui.PlainTextOutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
 import com.amazon.speech.ui.SsmlOutputSpeech;
@@ -40,12 +27,22 @@ import com.amazon.speech.ui.SsmlOutputSpeech;
 public class SessionSpeechlet implements SpeechletV2 {
 
 
-	private static final int REPEATMSECS = 0;
-
-
 
 	public final String[] speed = {"medium","fast","x-fast"};
+	
+	public final String[] success = {"huzzah", "all righty","bam","bada bing bada boom","bazinga","bingo","bravo","checkmate","eureka","hip hip hooray","hurrah","hurray","kaboom","ta da","whee","yay"};
+	public final String[] failure = {"argh","duh","uh oh","blah","boo","darn","honk","no way","ouch"};
+	public final String[] finish = {"mazel tov","well done","bravo"};
 
+	
+	//histor the block -> histablock
+
+	///write a crew - > white echo
+
+	//electric rises - > electric razors
+
+
+	
 	public final Gab[] gabs = {new Gab("Ace Leap Lesson Height","A Sleepless Night"), 
 			new Gab("Ace Lie Soap Eye","A Slice of Pie"), 
 			new Gab("Ace Nose Dorm","A Snowstorm"), 
@@ -59,7 +56,7 @@ public class SessionSpeechlet implements SpeechletV2 {
 			new Gab("Buy Ass Fraction","Bias For Action"),
 			new Gab("Alex ash oh ping","Alexa Shopping"),
 			new Gab("custom err orb session","Customer obsession"),
-			new Gab("in cease ton thai ass stand darts ","Insist on highest standards"),
+			new Gab("in cease ton thai ass stand darts ","Insist on the highest standards"),
 			new Gab("own err ship","Ownership")};
 
 
@@ -80,14 +77,13 @@ public class SessionSpeechlet implements SpeechletV2 {
 		// log.info("onSessionStarted requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
 		//       requestEnvelope.getSession().getSessionId());
 		// any initialization logic goes here
+		
 	}
 
 	@Override
 	public SpeechletResponse onLaunch(SpeechletRequestEnvelope<LaunchRequest> requestEnvelope) {
 		//log.info("onLaunch requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
-		Session session = requestEnvelope.getSession();
-		session.setAttribute("Played","0");
-		session.setAttribute("Correct","0");
+		
 		return getWelcomeResponse(requestEnvelope.getSession());
 	}
 
@@ -113,11 +109,9 @@ public class SessionSpeechlet implements SpeechletV2 {
 			return handleStop(session);
 		} else if ("AMAZON.StartOverIntent".equals(intentName)) {
 			return getWelcomeResponse(session);
-		}
-		else if ("AMAZON.HelpIntent".equals(intentName)){
+		} else if ("AMAZON.HelpIntent".equals(intentName)){
 			return getHelpResponse(session);
-		}
-		else {
+		} else {
 			String errorSpeech = intentName + " is unsupported.  Please try something else.";
 			return getSpeechletResponse(errorSpeech, errorSpeech, true);
 		}
@@ -125,11 +119,12 @@ public class SessionSpeechlet implements SpeechletV2 {
 
 	private SpeechletResponse handleStop(Session session) {
 		Map<String, Object> attributes = session.getAttributes();
-		Integer played = (Integer)attributes.getOrDefault("Played", 0);
-		Integer correct = (Integer)attributes.getOrDefault("Correct", 0);
+		
+		
+		Integer played = (Integer) attributes.getOrDefault("Played", 0);
+		Integer correct = (Integer) attributes.getOrDefault("Correct", 0);
 
-		Integer score = played > 0 ? correct * 100 / played : 0;
-		return getSpeechletResponse(String.format("Your Score is %d out of 100", score), null, false);
+		return getSpeechletResponse(String.format("%s! Your Score is %d out of %d", interject(finish[r.nextInt(finish.length)]), correct,played), null, false);
 	}
 	private SpeechletResponse getHelpResponse(Session session) {
 		String speechText = 
@@ -164,7 +159,7 @@ public class SessionSpeechlet implements SpeechletV2 {
 	public final Random r = new Random(306054743L);
 
 	String getGabText(Session session){
-		int gabIndex = r.nextInt(gabs.length);		
+		int gabIndex = (Integer)session.getAttribute(GAB_INDEX)+1;	
 		Gab gab  = gabs[gabIndex];
 		session.setAttribute(GAB_INDEX, gabIndex);
 		session.setAttribute(SPEED_INDEX, 0);
@@ -180,13 +175,21 @@ public class SessionSpeechlet implements SpeechletV2 {
 	 */
 	private SpeechletResponse getWelcomeResponse(Session session) {
 		// Create the welcome message.
-
+		session.setAttribute("Played",0);
+		session.setAttribute("Correct",0);
+		session.setAttribute(GAB_INDEX,-1);
 
 		String repromptText = getGabText(session);
 		String speechText = "Welcome to Mad Gab, " +repromptText;
 		return getSpeechletResponse(speechText, repromptText, true);
 	}
 
+	
+	
+	public static String interject(String in) {
+		return "<say-as interpret-as=\"interjection\">"+in+"</say-as>";
+	}
+	
 	/**
 	 * Creates a {@code SpeechletResponse} for the intent and stores the extracted color in the
 	 * Session.
@@ -220,24 +223,33 @@ public class SessionSpeechlet implements SpeechletV2 {
 			if("faster".equals(answer)) {
 				return getFasterResponse(session);
 			}
+			
+			if("next".equals(answer)) {
+				return handleDontKnow(intent, session);
+			}
+			
 
 			if(answer == null) {
 				answer = "nothing";
 			}
 			speechText = "";
 			String correctAnswer = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].answer;
-			String correctString = correctAnswer.replaceAll("//s+", "");
-			String answerTrimmed = answer.replaceAll("//s+", "");
+			String correctString = correctAnswer.replaceAll("\\s+", "");
+			String answerTrimmed = answer.replaceAll("\\s+", "");
 
-			session.setAttribute("Played",  Integer.parseInt(session.getAttribute("Played").toString()) + 1);
+			session.setAttribute("Played",  (Integer)session.getAttribute("Played") + 1);
 
-			if(minDistance(correctString,answerTrimmed) <=2) {
-				session.setAttribute("Correct", Integer.parseInt(session.getAttribute("Correct").toString()) + 1);
-				log.info("correct! received: " + answer+ " correct answer: " + correctAnswer);	
-				speechText += "Correct! ";
+			if(answerTrimmed.equalsIgnoreCase(correctString) || answerTrimmed.equalsIgnoreCase(correctString.substring(1)) || correctString.equalsIgnoreCase(answerTrimmed.substring(1))) {
+				session.setAttribute("Correct", (Integer)session.getAttribute("Correct") + 1);
+				log.info("Correct! received: " + answer+ " correct answer: " + correctAnswer);	
+				speechText += interject(success[r.nextInt(success.length)])+"! ";
 			} else {
 				log.info("wrong! received: " + answer+ ". correct answer: " + correctAnswer);
-				speechText += "Wrong! You said " +answer +". The answer was " + correctAnswer+". ";
+				log.info("answerTrimmed:"+ answerTrimmed);
+				log.info("correctString:"+ correctString);
+				log.info("correctString.substring(1):"+ correctString.substring(1));
+				log.info("answerTrimmed.substring(1):"+ answerTrimmed.substring(1));
+				speechText += interject(failure[r.nextInt(failure.length)])+"! You said " +answer +". The answer was " + correctAnswer+". ";
 			}
 
 
@@ -263,47 +275,6 @@ public class SessionSpeechlet implements SpeechletV2 {
 		session.setAttribute(SPEED_INDEX, speed );
 		return handleRepeat(session);
 	}
-
-	public static int minDistance(String word1, String word2) {
-		int len1 = word1.length();
-		int len2 = word2.length();
-
-		// len1+1, len2+1, because finally return dp[len1][len2]
-		int[][] dp = new int[len1 + 1][len2 + 1];
-
-		for (int i = 0; i <= len1; i++) {
-			dp[i][0] = i;
-		}
-
-		for (int j = 0; j <= len2; j++) {
-			dp[0][j] = j;
-		}
-
-		//iterate though, and check last char
-		for (int i = 0; i < len1; i++) {
-			char c1 = word1.charAt(i);
-			for (int j = 0; j < len2; j++) {
-				char c2 = word2.charAt(j);
-
-				//if last two chars equal
-				if (c1 == c2) {
-					//update dp value for +1 length
-					dp[i + 1][j + 1] = dp[i][j];
-				} else {
-					int replace = dp[i][j] + 1;
-					int insert = dp[i][j + 1] + 1;
-					int delete = dp[i + 1][j] + 1;
-
-					int min = replace > insert ? insert : replace;
-					min = delete > min ? min : delete;
-					dp[i + 1][j + 1] = min;
-				}
-			}
-		}
-
-		return dp[len1][len2];
-	}
-
 
 	/**
 	 * Returns a Speechlet response for a speech and reprompt text.

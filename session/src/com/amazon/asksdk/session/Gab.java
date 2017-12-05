@@ -1,6 +1,5 @@
 package com.amazon.asksdk.session;
 
-import com.amazon.speech.ui.SsmlOutputSpeech;
 
 import java.util.Arrays;
 import java.util.regex.Pattern;
