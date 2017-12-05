@@ -106,7 +106,7 @@ public class SessionSpeechlet implements SpeechletV2 {
         } else if ("AMAZON.RepeatIntent".equals(intentName)) {
             return handleRepeat(intent, session);
         } else if ("AMAZON.StopIntent".equals(intentName)) {
-        	return handleStop();
+        	return handleStop(session);
         } else if ("AMAZON.StartOverIntent".equals(intentName)) {
         	return getWelcomeResponse(session);
         }
@@ -119,8 +119,13 @@ public class SessionSpeechlet implements SpeechletV2 {
         }
     }
 
-	private SpeechletResponse handleStop() {
-		return getSpeechletResponse("Your Score is 0", null, false);
+	private SpeechletResponse handleStop(Session session) {
+        Map<String, Object> attributes = session.getAttributes();
+        Integer played = (Integer)attributes.getOrDefault("Played", 0);
+        Integer correct = (Integer)attributes.getOrDefault("Correct", 0);
+
+        Integer score = played > 0 ? correct * 100 / played : 0;
+		return getSpeechletResponse(String.format("Your Score is %s/100", score), null, false);
 	}
     private SpeechletResponse getHelpResponse(Session session) {
         String speechText = 
@@ -198,7 +203,7 @@ public class SessionSpeechlet implements SpeechletV2 {
         	
             String answer = answerSlot.getValue();
             if("stop".equals(answer)) {
-            	return handleStop();
+            	return handleStop(session);
             }
             
             if("help".equals(answer)) {
@@ -211,9 +216,11 @@ public class SessionSpeechlet implements SpeechletV2 {
             String correctAnswer = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].answer;
             String correctString = correctAnswer.replaceAll("//s+", "");
             String answerTrimmed = answer.replaceAll("//s+", "");
-            
-            
+
+            session.setAttribute("Played", (Integer)session.getAttribute("Played") + 1);
+
             if(minDistance(correctString,answerTrimmed) <=1) {
+                session.setAttribute("Correct", (Integer)session.getAttribute("Correct") + 1);
             	log.info("correct! received: " + answer+ " correct answer: " + correctAnswer);	
             	speechText += "Correct! ";
             } else {
@@ -304,5 +311,4 @@ public class SessionSpeechlet implements SpeechletV2 {
             return SpeechletResponse.newTellResponse(speech, card);
         }
     }
-    
 }
