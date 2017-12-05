@@ -111,9 +111,6 @@ public class SessionSpeechlet implements SpeechletV2 {
         return getSpeechletResponse(speechText, speechText, true);
     }
 
-
-
-
     private SpeechletResponse handleRepeat(Intent intent, Session session) {
         String repromptText = session.getAttribute(QUESTION_KEY).toString();
         String speechText = repromptText;
