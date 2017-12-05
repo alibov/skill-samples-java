@@ -39,13 +39,22 @@ import com.amazon.speech.ui.SimpleCard;
 public class SessionSpeechlet implements SpeechletV2 {
 	
 
-    public final Gab[] gabs = {new Gab("Ace Leap Lesson Height","A Sleepless Night"), new Gab("Ace Lie Soap Eye","A Slice of Pie"), new Gab("Ace Nose Dorm","A Snowstorm"), new Gab("Ace Pea Ding Tea Kit","A Speeding Ticket"), new Gab("Ache Hand He Eye Pull","A Candy Apple"), new Gab("Ache Hick Kin Tub Hut","A Kick in the Butt"), new Gab("Ache Hood Sin Sew Fume Her","A Good Sense of Humor"), new Gab("Agree Nap Hull","A Green Apple"), new Gab("Bat Tree Snot Ink Looted","Batteries not included"), new Gab("Backed Ooze Queer Won","Back to Square One")};
+    public final Gab[] gabs = {new Gab("Ace Leap Lesson Height","A Sleepless Night"), 
+    		new Gab("Ace Lie Soap Eye","A Slice of Pie"), 
+    		new Gab("Ace Nose Dorm","A Snowstorm"), 
+    		new Gab("Ace Pea Ding Tea Kit","A Speeding Ticket"), 
+    		new Gab("Ache Hand He Eye Pull","A Candy Apple"), 
+    		new Gab("Ache Hick Kin Tub Hut","A Kick in the Butt"), 
+    		new Gab("Ache Hood Sin Sew Fume Her","A Good Sense of Humor"), 
+    		new Gab("Agree Nap Hull","A Green Apple"), 
+    		new Gab("Bat Tree Snot Ink Looted","Batteries not included"), 
+    		new Gab("Backed Ooze Queer Won","Back to Square 1")};
 
     private static final Logger log = LoggerFactory.getLogger(SessionSpeechlet.class);
 
     private static final String QUESTION_KEY = "QUESTION";
     private static final String ANSWER_KEY = "ANSWER";
-    private static final List<String> ANSWER_SLOTS = Arrays.asList("movieAnswer","answer","book","tvshow");
+    //private static final List<String> ANSWER_SLOTS = Arrays.asList("movieAnswer","answer","book","tvshow");
 
     @Override
     public void onSessionStarted(SpeechletRequestEnvelope<SessionStartedRequest> requestEnvelope) {
