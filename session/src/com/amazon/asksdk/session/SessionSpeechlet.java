@@ -40,7 +40,12 @@ import com.amazon.speech.ui.SsmlOutputSpeech;
 public class SessionSpeechlet implements SpeechletV2 {
 	
 
-    public final Gab[] gabs = {new Gab("Ace Leap Lesson Height","A Sleepless Night"), 
+    private static final int REPEATMSECS = 10;
+
+
+
+
+	public final Gab[] gabs = {new Gab("Ace Leap Lesson Height","A Sleepless Night"), 
     		new Gab("Ace Lie Soap Eye","A Slice of Pie"), 
     		new Gab("Ace Nose Dorm","A Snowstorm"), 
     		new Gab("Ace Pea Ding Tea Kit","A Speeding Ticket"), 
@@ -50,10 +55,10 @@ public class SessionSpeechlet implements SpeechletV2 {
     		new Gab("Agree Nap Hull","A Green Apple"), 
     		new Gab("Bat Tree Snot Ink Looted","Batteries not included"), 
     		new Gab("Backed Ooze Queer Won","Back to Square 1"),
-    		new Gab("Buy Ass Fraction","Bias Foe Action"),
+    		new Gab("Buy Ass Fraction","Bias For Action"),
     		new Gab("Alex ash oh ping","Alexa Shopping"),
     		new Gab("custom err orb session","Customer obsession"),
-    		new Gab("in cease ton thai ass stand darts ","Insist on higher standards"),
+    		new Gab("in cease ton thai ass stand darts ","Insist on highest standards"),
     		new Gab("own err ship","Ownership")};
     
     
@@ -61,8 +66,11 @@ public class SessionSpeechlet implements SpeechletV2 {
 
     private static final Logger log = LoggerFactory.getLogger(SessionSpeechlet.class);
 
-    private static final String QUESTION_KEY = "QUESTION";
-    private static final String ANSWER_KEY = "ANSWER";
+    private static final String GAB_INDEX = "GABINDEX";
+
+
+
+
     //private static final List<String> ANSWER_SLOTS = Arrays.asList("movieAnswer","answer","book","tvshow");
 
     @Override
@@ -120,13 +128,13 @@ public class SessionSpeechlet implements SpeechletV2 {
                 "For example, for the puzzle: \"hay. reap. otter.\", the solution is: \"the movie Harry Potter\". \n" +
                 "For the puzzle: \"Thud. Oven. Cheek. Ode.\", the solution is \"The Da-Vinci Code\" <break time=\"0.8s\"/> \n" +
                 "You can say \"repeat\", \"go back\"";
-        String repromptText = session.getAttribute(QUESTION_KEY).toString();
+        String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].question;
         speechText += repromptText;
         return getSpeechletResponse(speechText, repromptText, true);
     }
 
     private SpeechletResponse handleRepeat(Intent intent, Session session) {
-        String repromptText = session.getAttribute(QUESTION_KEY).toString();
+        String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].getEnrichedSpeech(REPEATMSECS);
         String speechText = repromptText;
         return getSpeechletResponse(speechText, repromptText, true);
 	}
@@ -145,16 +153,11 @@ public class SessionSpeechlet implements SpeechletV2 {
  
 	public final Random r = new Random(306054743L);
 	
-    Gab getGab(){
-		return gabs[r.nextInt(gabs.length)];
-    }
-    
-    
-	String getGabText(Session session){
-    	Gab gab  = getGab();
-    	  session.setAttribute(QUESTION_KEY, gab.questionPeriods());
-          session.setAttribute(ANSWER_KEY, gab.answer);
-        return "Here's your next puzzle:\n\r " + gab.questionPeriods() + "<break time=\"5s\"/> ";
+    String getGabText(Session session){
+		int gabIndex = r.nextInt(gabs.length);		
+    	Gab gab  = gabs[gabIndex];
+          session.setAttribute(GAB_INDEX, gabIndex);
+        return "Here's your next puzzle:\n\r " + gab.questionPeriods() + "<break time=\"2s\"/>";
     	
     }
     
@@ -197,14 +200,19 @@ public class SessionSpeechlet implements SpeechletV2 {
             if("stop".equals(answer)) {
             	return handleStop();
             }
-            speechText = "";
             
-            if(answer != null && answer.replaceAll("//s+", "").equalsIgnoreCase(session.getAttribute(ANSWER_KEY).toString().replaceAll("//s+", ""))) {
-            	log.info("correct! received: " + answer+ " correct answer: " + session.getAttribute(ANSWER_KEY).toString());	
+            if("help".equals(answer)) {
+            	return getHelpResponse(session);
+            }
+            speechText = "";
+            String correctAnswer = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].answer;
+            
+            if(answer != null && answer.replaceAll("//s+", "").equalsIgnoreCase(correctAnswer.replaceAll("//s+", ""))) {
+            	log.info("correct! received: " + answer+ " correct answer: " + correctAnswer);	
             	speechText += "Correct! ";
             } else {
-            	log.info("wrong! received: " + answer+ ". correct answer: " + session.getAttribute(ANSWER_KEY).toString());
-            	speechText += "Wrong! You said " +(answer==null?"nothing":answer) +" The answer was " + session.getAttribute(ANSWER_KEY).toString()+". ";
+            	log.info("wrong! received: " + answer+ ". correct answer: " + correctAnswer);
+            	speechText += "Wrong! You said " +(answer==null?"nothing":answer) +" The answer was " + correctAnswer+". ";
             }
             
             
@@ -230,7 +238,7 @@ public class SessionSpeechlet implements SpeechletV2 {
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
         card.setTitle("Mad Gab");
-        card.setContent(speechText.replaceAll("<break\b[^>]*\\/>", ""));
+        card.setContent(speechText.replaceAll("<[^>]*>", ""));
 
         // Create the plain text output.
         SsmlOutputSpeech speech = new SsmlOutputSpeech();
@@ -249,4 +257,5 @@ public class SessionSpeechlet implements SpeechletV2 {
             return SpeechletResponse.newTellResponse(speech, card);
         }
     }
+    
 }
