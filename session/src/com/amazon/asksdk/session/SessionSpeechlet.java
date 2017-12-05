@@ -9,6 +9,8 @@
  */
 package com.amazon.asksdk.session;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -43,7 +45,7 @@ public class SessionSpeechlet implements SpeechletV2 {
 
     private static final String QUESTION_KEY = "QUESTION";
     private static final String ANSWER_KEY = "ANSWER";
-    private static final String ANSWER_SLOT = "movieAnswer";
+    private static final List<String> ANSWER_SLOTS = Arrays.asList("movieAnswer","answer","book","tvshow");
 
     @Override
     public void onSessionStarted(SpeechletRequestEnvelope<SessionStartedRequest> requestEnvelope) {
@@ -79,6 +81,8 @@ public class SessionSpeechlet implements SpeechletV2 {
             return handleRepeat(intent, session);
         } else if ("AMAZON.StopIntent".equals(intentName)) {
         	return getSpeechletResponse("Your Score is 0", null, false);
+        } else if ("AMAZON.StartOverIntent".equals(intentName)) {
+        	return getWelcomeResponse(session);
         } else {
             String errorSpeech = intentName + " is unsupported.  Please try something else.";
             return getSpeechletResponse(errorSpeech, errorSpeech, true);
@@ -145,8 +149,8 @@ public class SessionSpeechlet implements SpeechletV2 {
         // Get the slots from the intent.
         Map<String, Slot> slots = intent.getSlots();
 
+        Slot answerSlot = slots.values().stream().filter(u-> u!= null && u.getValue() != null).findFirst().orElse(null);
         // Get the color slot from the list of slots.
-        Slot answerSlot = slots.get(ANSWER_SLOT);
         String speechText, repromptText;
 
         // Check for favorite color and create output to user.
@@ -155,7 +159,7 @@ public class SessionSpeechlet implements SpeechletV2 {
         	
             String answer = answerSlot.getValue();
             speechText = "";
-            if(answer != null && answer.equalsIgnoreCase(session.getAttribute(ANSWER_KEY).toString())) {
+            if(answer != null && answer.replaceAll("//s+", "").equalsIgnoreCase(session.getAttribute(ANSWER_KEY).toString().replaceAll("//s+", ""))) {
             	speechText += "Correct! ";
             } else {
             	speechText += "Wrong! The answer was " + session.getAttribute(ANSWER_KEY).toString()+". ";
@@ -166,9 +170,9 @@ public class SessionSpeechlet implements SpeechletV2 {
             speechText += repromptText;
 
         } else {
-            speechText = "Try answering the puzzle by saying which movie or book it is";
+            speechText = "Try answering the puzzle";
             repromptText =
-                    "Try answering the puzzle by saying which movie or book it is, you can skip this puzzle";
+                    "Try answering the puzzle, you can skip this puzzle by saying skip";
         }
 
         return getSpeechletResponse(speechText, repromptText, true);
