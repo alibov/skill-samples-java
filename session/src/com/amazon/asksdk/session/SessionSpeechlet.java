@@ -83,10 +83,23 @@ public class SessionSpeechlet implements SpeechletV2 {
         	return getSpeechletResponse("Your Score is 0", null, false);
         } else if ("AMAZON.StartOverIntent".equals(intentName)) {
         	return getWelcomeResponse(session);
-        } else {
+        }
+        else if ("AMAZON.HelpIntent".equals(intentName)){
+            return getHelpResponse(session);
+        }
+        else {
             String errorSpeech = intentName + " is unsupported.  Please try something else.";
             return getSpeechletResponse(errorSpeech, errorSpeech, true);
         }
+    }
+
+    private SpeechletResponse getHelpResponse(Session session) {
+        String speechText = "<speak>\n" +
+                "I will ask you a mad gab puzzle, consisting of simple words. These words, when <w role=\"amazon:VBD\">read</w> out loud, make up a name of a movie, or an amazon leadership principle. \n" +
+                "For example, for the puzzle: \"hay. reap. otter.\", the solution is: \"the movie Harry Potter\". \n" +
+                "For the puzzle: \"Thud. Oven. Cheek. Ode.\", the solution is \"The Da-Vinci Code\" <break time=\"0.8s\"/> \n" +
+                "You can say \"repeat\", \"go back\"</speak>\n";
+        return getSpeechletResponse(speechText, speechText, true);
     }
 
     private SpeechletResponse handleRepeat(Intent intent, Session session) {
