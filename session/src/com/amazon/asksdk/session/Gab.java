@@ -15,10 +15,10 @@ public class Gab {
 	}
 	
 	final static Pattern spaces = Pattern.compile("\\s+");
-	public String questionPeriods() {
-		return Arrays.stream(spaces.split(question)).collect(Collectors.joining(". "));
+	public String questionPeriods(String speed){
+		return "<prosody rate=\""+speed+"\">"+Arrays.stream(spaces.split(question)).collect(Collectors.joining(". "))+"</prosody>";
 	}
-
+	
 	public String getEnrichedSpeech(int milisecondsBreakTime) {
 		StringBuilder builder = new StringBuilder();
 		builder.append("<emphasis level=\"reduced\">");

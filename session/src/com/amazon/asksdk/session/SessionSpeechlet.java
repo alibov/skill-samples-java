@@ -40,10 +40,11 @@ import com.amazon.speech.ui.SsmlOutputSpeech;
 public class SessionSpeechlet implements SpeechletV2 {
 	
 
-    private static final int REPEATMSECS = 10;
+    private static final int REPEATMSECS = 0;
 
 
 
+    public final String[] speed = {"medium","fast","x-fast"};
 
 	public final Gab[] gabs = {new Gab("Ace Leap Lesson Height","A Sleepless Night"), 
     		new Gab("Ace Lie Soap Eye","A Slice of Pie"), 
@@ -67,6 +68,7 @@ public class SessionSpeechlet implements SpeechletV2 {
     private static final Logger log = LoggerFactory.getLogger(SessionSpeechlet.class);
 
     private static final String GAB_INDEX = "GABINDEX";
+    private static final String SPEED_INDEX = "SPEEDINDEX";
 
 
 
@@ -104,7 +106,7 @@ public class SessionSpeechlet implements SpeechletV2 {
         } else if ("DontKnowIntent".equals(intentName)) {
             return handleDontKnow(intent, session);
         } else if ("AMAZON.RepeatIntent".equals(intentName)) {
-            return handleRepeat(intent, session);
+            return handleRepeat(session);
         } else if ("AMAZON.StopIntent".equals(intentName)) {
         	return handleStop();
         } else if ("AMAZON.StartOverIntent".equals(intentName)) {
@@ -128,13 +130,14 @@ public class SessionSpeechlet implements SpeechletV2 {
                 "For example, for the puzzle: \"hay. reap. otter.\", the solution is: \"the movie Harry Potter\". \n" +
                 "For the puzzle: \"Thud. Oven. Cheek. Ode.\", the solution is \"The Da-Vinci Code\" <break time=\"0.8s\"/> \n" +
                 "You can say \"repeat\", \"go back\"";
-        String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].question;
+        String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].questionPeriods(speed[(int) session.getAttribute(SPEED_INDEX)]);
         speechText += repromptText;
         return getSpeechletResponse(speechText, repromptText, true);
     }
 
-    private SpeechletResponse handleRepeat(Intent intent, Session session) {
-        String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].getEnrichedSpeech(REPEATMSECS);
+    private SpeechletResponse handleRepeat(Session session) {
+        //String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].getEnrichedSpeech(REPEATMSECS);
+    	String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].questionPeriods(speed[(int) session.getAttribute(SPEED_INDEX)]);
         String speechText = repromptText;
         return getSpeechletResponse(speechText, repromptText, true);
 	}
@@ -157,7 +160,8 @@ public class SessionSpeechlet implements SpeechletV2 {
 		int gabIndex = r.nextInt(gabs.length);		
     	Gab gab  = gabs[gabIndex];
           session.setAttribute(GAB_INDEX, gabIndex);
-        return "Here's your next puzzle:\n\r " + gab.questionPeriods() + "<break time=\"2s\"/>";
+          session.setAttribute(SPEED_INDEX, 0);
+        return "Here's your next puzzle:\n\r " + gab.questionPeriods(speed[(int) session.getAttribute(SPEED_INDEX)]) + "<break time=\"2s\"/>";
     	
     }
     
@@ -170,6 +174,7 @@ public class SessionSpeechlet implements SpeechletV2 {
     private SpeechletResponse getWelcomeResponse(Session session) {
         // Create the welcome message.
 		
+    	
         String repromptText = getGabText(session);
         String speechText = "Welcome to Mad Gab, " +repromptText;
         return getSpeechletResponse(speechText, repromptText, true);
@@ -204,6 +209,11 @@ public class SessionSpeechlet implements SpeechletV2 {
             if("help".equals(answer)) {
             	return getHelpResponse(session);
             }
+            
+            if("faster".equals(answer)) {
+            	return getFasterResponse(session);
+            }
+            
             if(answer == null) {
             	answer = "nothing";
             }
@@ -236,7 +246,16 @@ public class SessionSpeechlet implements SpeechletV2 {
     }
     
     
-    public static int minDistance(String word1, String word2) {
+    private SpeechletResponse getFasterResponse(Session session) {
+    	int speed = (int) session.getAttribute(SPEED_INDEX);
+    	if(speed <2) {
+    		speed++;
+    	}
+		session.setAttribute(SPEED_INDEX, speed );
+		return handleRepeat(session);
+	}
+
+	public static int minDistance(String word1, String word2) {
     	int len1 = word1.length();
     	int len2 = word2.length();
      
