@@ -31,6 +31,7 @@ import com.amazon.speech.json.SpeechletRequestEnvelope;
 import com.amazon.speech.ui.PlainTextOutputSpeech;
 import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
+import com.amazon.speech.ui.SsmlOutputSpeech;
 
 /**
  * This sample shows how to create a simple speechlet for handling intent requests and managing
@@ -48,6 +49,9 @@ public class SessionSpeechlet implements SpeechletV2 {
     		new Gab("Ache Hood Sin Sew Fume Her","A Good Sense of Humor"), 
     		new Gab("Agree Nap Hull","A Green Apple"), 
     		new Gab("Bat Tree Snot Ink Looted","Batteries not included"), 
+    		new Gab("Backed Ooze Queer Won","Back to Square 1"),
+    		new Gab("Buy Ass Fraction","Back to Square 1"),
+    		new Gab("Alex ","Back to Square 1"),
     		new Gab("Backed Ooze Queer Won","Back to Square 1")};
 
     private static final Logger log = LoggerFactory.getLogger(SessionSpeechlet.class);
@@ -58,15 +62,15 @@ public class SessionSpeechlet implements SpeechletV2 {
 
     @Override
     public void onSessionStarted(SpeechletRequestEnvelope<SessionStartedRequest> requestEnvelope) {
-        log.info("onSessionStarted requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
-                requestEnvelope.getSession().getSessionId());
+       // log.info("onSessionStarted requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
+         //       requestEnvelope.getSession().getSessionId());
         // any initialization logic goes here
     }
 
     @Override
     public SpeechletResponse onLaunch(SpeechletRequestEnvelope<LaunchRequest> requestEnvelope) {
-        log.info("onLaunch requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
-                requestEnvelope.getSession().getSessionId());
+        //log.info("onLaunch requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
+          //      requestEnvelope.getSession().getSessionId());
         return getWelcomeResponse(requestEnvelope.getSession());
     }
 
@@ -74,7 +78,7 @@ public class SessionSpeechlet implements SpeechletV2 {
     public SpeechletResponse onIntent(SpeechletRequestEnvelope<IntentRequest> requestEnvelope) {
         IntentRequest request = requestEnvelope.getRequest();
         Session session = requestEnvelope.getSession();
-        log.info("onIntent requestId={}, sessionId={}", request.getRequestId(), session);
+        //log.info("onIntent requestId={}, sessionId={}", request.getRequestId(), session);
 
         // Get intent from the request object.
         Intent intent = request.getIntent();
@@ -89,7 +93,7 @@ public class SessionSpeechlet implements SpeechletV2 {
         } else if ("AMAZON.RepeatIntent".equals(intentName)) {
             return handleRepeat(intent, session);
         } else if ("AMAZON.StopIntent".equals(intentName)) {
-        	return getSpeechletResponse("Your Score is 0", null, false);
+        	return handleStop();
         } else if ("AMAZON.StartOverIntent".equals(intentName)) {
         	return getWelcomeResponse(session);
         } else {
@@ -97,6 +101,10 @@ public class SessionSpeechlet implements SpeechletV2 {
             return getSpeechletResponse(errorSpeech, errorSpeech, true);
         }
     }
+
+	private SpeechletResponse handleStop() {
+		return getSpeechletResponse("Your Score is 0", null, false);
+	}
 
     private SpeechletResponse handleRepeat(Intent intent, Session session) {
         String repromptText = session.getAttribute(QUESTION_KEY).toString();
@@ -112,8 +120,8 @@ public class SessionSpeechlet implements SpeechletV2 {
 
 	@Override
     public void onSessionEnded(SpeechletRequestEnvelope<SessionEndedRequest> requestEnvelope) {
-        log.info("onSessionEnded requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
-                requestEnvelope.getSession().getSessionId());
+        //log.info("onSessionEnded requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
+          //      requestEnvelope.getSession().getSessionId());
     }
  
 	public final Random r = new Random(306054743L);
@@ -127,7 +135,7 @@ public class SessionSpeechlet implements SpeechletV2 {
     	Gab gab  = getGab();
     	  session.setAttribute(QUESTION_KEY, gab.questionPeriods());
           session.setAttribute(ANSWER_KEY, gab.answer);
-        return "Here's your next puzzle:\n\r " + gab.questionPeriods();
+        return "Here's your next puzzle:\n\r " + gab.questionPeriods() + "<break time=\"5s\"/> ";
     	
     }
     
@@ -167,12 +175,19 @@ public class SessionSpeechlet implements SpeechletV2 {
             // Store the user's favorite color in the Session and create response.
         	
             String answer = answerSlot.getValue();
+            if("stop".equals(answer)) {
+            	return handleStop();
+            }
             speechText = "";
+            
             if(answer != null && answer.replaceAll("//s+", "").equalsIgnoreCase(session.getAttribute(ANSWER_KEY).toString().replaceAll("//s+", ""))) {
+            	log.info("correct! received: " + answer+ " correct answer: " + session.getAttribute(ANSWER_KEY).toString());	
             	speechText += "Correct! ";
             } else {
-            	speechText += "Wrong! The answer was " + session.getAttribute(ANSWER_KEY).toString()+". ";
+            	log.info("wrong! received: " + answer+ ". correct answer: " + session.getAttribute(ANSWER_KEY).toString());
+            	speechText += "Wrong! You said " +(answer==null?"nothing":answer) +" The answer was " + session.getAttribute(ANSWER_KEY).toString()+". ";
             }
+            
             
             repromptText = getGabText(session);
             
@@ -195,12 +210,12 @@ public class SessionSpeechlet implements SpeechletV2 {
             boolean isAskResponse) {
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
-        card.setTitle("Session");
-        card.setContent(speechText);
+        card.setTitle("Mad Gab");
+        card.setContent(speechText.replaceAll("<break\b[^>]*>(.*?)</break>", ""));
 
         // Create the plain text output.
-        PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
-        speech.setText(speechText);
+        SsmlOutputSpeech speech = new SsmlOutputSpeech();
+        speech.setSsml("<speak>" + speechText +"</speak>");
 
         if (isAskResponse) {
             // Create reprompt
