@@ -159,7 +159,7 @@ public class SessionSpeechlet implements SpeechletV2 {
 	public final Random r = new Random(306054743L);
 
 	String getGabText(Session session){
-		int gabIndex = (Integer)session.getAttribute(GAB_INDEX)+1;	
+		int gabIndex = ((Integer)session.getAttribute(GAB_INDEX)+1)%gabs.length;	
 		Gab gab  = gabs[gabIndex];
 		session.setAttribute(GAB_INDEX, gabIndex);
 		session.setAttribute(SPEED_INDEX, 0);
