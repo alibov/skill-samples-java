@@ -50,9 +50,14 @@ public class SessionSpeechlet implements SpeechletV2 {
     		new Gab("Agree Nap Hull","A Green Apple"), 
     		new Gab("Bat Tree Snot Ink Looted","Batteries not included"), 
     		new Gab("Backed Ooze Queer Won","Back to Square 1"),
-    		new Gab("Buy Ass Fraction","Back to Square 1"),
-    		new Gab("Alex ","Back to Square 1"),
-    		new Gab("Backed Ooze Queer Won","Back to Square 1")};
+    		new Gab("Buy Ass Fraction","Bias Foe Action"),
+    		new Gab("Alex ash oh ping","Alexa Shopping"),
+    		new Gab("custom err orb session","Customer obsession"),
+    		new Gab("in cease ton thai ass stand darts ","Insist on higher standards"),
+    		new Gab("own err ship","Ownership")};
+    
+    
+
 
     private static final Logger log = LoggerFactory.getLogger(SessionSpeechlet.class);
 
@@ -225,7 +230,7 @@ public class SessionSpeechlet implements SpeechletV2 {
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
         card.setTitle("Mad Gab");
-        card.setContent(speechText.replaceAll("<break\b[^>]*>.*?</break>", ""));
+        card.setContent(speechText.replaceAll("<break\b[^>]*\\/>", ""));
 
         // Create the plain text output.
         SsmlOutputSpeech speech = new SsmlOutputSpeech();
