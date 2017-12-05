@@ -38,296 +38,298 @@ import com.amazon.speech.ui.SsmlOutputSpeech;
  * session interactions.
  */
 public class SessionSpeechlet implements SpeechletV2 {
-	
-
-    private static final int REPEATMSECS = 0;
 
 
+	private static final int REPEATMSECS = 0;
 
-    public final String[] speed = {"medium","fast","x-fast"};
+
+
+	public final String[] speed = {"medium","fast","x-fast"};
 
 	public final Gab[] gabs = {new Gab("Ace Leap Lesson Height","A Sleepless Night"), 
-    		new Gab("Ace Lie Soap Eye","A Slice of Pie"), 
-    		new Gab("Ace Nose Dorm","A Snowstorm"), 
-    		new Gab("Ace Pea Ding Tea Kit","A Speeding Ticket"), 
-    		new Gab("Ache Hand He Eye Pull","A Candy Apple"), 
-    		new Gab("Ache Hick Kin Tub Hut","A Kick in the Butt"), 
-    		new Gab("Ache Hood Sin Sew Fume Her","A Good Sense of Humor"), 
-    		new Gab("Agree Nap Hull","A Green Apple"), 
-    		new Gab("Bat Tree Snot Ink Looted","Batteries not included"), 
-    		new Gab("Backed Ooze Queer Won","Back to Square 1"),
-    		new Gab("Buy Ass Fraction","Bias For Action"),
-    		new Gab("Alex ash oh ping","Alexa Shopping"),
-    		new Gab("custom err orb session","Customer obsession"),
-    		new Gab("in cease ton thai ass stand darts ","Insist on highest standards"),
-    		new Gab("own err ship","Ownership")};
-    
-    
-
-
-    private static final Logger log = LoggerFactory.getLogger(SessionSpeechlet.class);
-
-    private static final String GAB_INDEX = "GABINDEX";
-    private static final String SPEED_INDEX = "SPEEDINDEX";
+			new Gab("Ace Lie Soap Eye","A Slice of Pie"), 
+			new Gab("Ace Nose Dorm","A Snowstorm"), 
+			new Gab("Ace Pea Ding Tea Kit","A Speeding Ticket"), 
+			new Gab("Ache Hand He Eye Pull","A Candy Apple"), 
+			new Gab("Ache Hick Kin Tub Hut","A Kick in the Butt"), 
+			new Gab("Ache Hood Sin Sew Fume Her","A Good Sense of Humor"), 
+			new Gab("Agree Nap Hull","A Green Apple"), 
+			new Gab("Bat Tree Snot Ink Looted","Batteries not included"), 
+			new Gab("Backed Ooze Queer Won","Back to Square 1"),
+			new Gab("Buy Ass Fraction","Bias For Action"),
+			new Gab("Alex ash oh ping","Alexa Shopping"),
+			new Gab("custom err orb session","Customer obsession"),
+			new Gab("in cease ton thai ass stand darts ","Insist on highest standards"),
+			new Gab("own err ship","Ownership")};
 
 
 
 
-    //private static final List<String> ANSWER_SLOTS = Arrays.asList("movieAnswer","answer","book","tvshow");
+	private static final Logger log = LoggerFactory.getLogger(SessionSpeechlet.class);
 
-    @Override
-    public void onSessionStarted(SpeechletRequestEnvelope<SessionStartedRequest> requestEnvelope) {
-       // log.info("onSessionStarted requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
-         //       requestEnvelope.getSession().getSessionId());
-        // any initialization logic goes here
-    }
+	private static final String GAB_INDEX = "GABINDEX";
+	private static final String SPEED_INDEX = "SPEEDINDEX";
 
-    @Override
-    public SpeechletResponse onLaunch(SpeechletRequestEnvelope<LaunchRequest> requestEnvelope) {
-        //log.info("onLaunch requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
-          //      requestEnvelope.getSession().getSessionId());
-        return getWelcomeResponse(requestEnvelope.getSession());
-    }
 
-    @Override
-    public SpeechletResponse onIntent(SpeechletRequestEnvelope<IntentRequest> requestEnvelope) {
-        IntentRequest request = requestEnvelope.getRequest();
-        Session session = requestEnvelope.getSession();
-        //log.info("onIntent requestId={}, sessionId={}", request.getRequestId(), session);
 
-        // Get intent from the request object.
-        Intent intent = request.getIntent();
-        String intentName = (intent != null) ? intent.getName() : null;
 
-        // Note: If the session is started with an intent, no welcome message will be rendered;
-        // rather, the intent specific response will be returned.
-        if ("AnswerIntent".equals(intentName)) {
-            return handleAnswerIntent(intent, session);
-        } else if ("DontKnowIntent".equals(intentName)) {
-            return handleDontKnow(intent, session);
-        } else if ("AMAZON.RepeatIntent".equals(intentName)) {
-            return handleRepeat(session);
-        } else if ("AMAZON.StopIntent".equals(intentName)) {
-        	return handleStop(session);
-        } else if ("AMAZON.StartOverIntent".equals(intentName)) {
-        	return getWelcomeResponse(session);
-        }
-        else if ("AMAZON.HelpIntent".equals(intentName)){
-            return getHelpResponse(session);
-        }
-        else {
-            String errorSpeech = intentName + " is unsupported.  Please try something else.";
-            return getSpeechletResponse(errorSpeech, errorSpeech, true);
-        }
-    }
+	//private static final List<String> ANSWER_SLOTS = Arrays.asList("movieAnswer","answer","book","tvshow");
 
-	private SpeechletResponse handleStop(Session session) {
-        Map<String, Object> attributes = session.getAttributes();
-        Integer played = (Integer)attributes.getOrDefault("Played", 0);
-        Integer correct = (Integer)attributes.getOrDefault("Correct", 0);
-
-        Integer score = played > 0 ? correct * 100 / played : 0;
-		return getSpeechletResponse(String.format("Your Score is %s/100", score), null, false);
-	}
-    private SpeechletResponse getHelpResponse(Session session) {
-        String speechText = 
-                "I will ask you a mad gab puzzle, consisting of simple words. These words, when <w role=\"amazon:VBD\">read</w> out loud, make up a name of a movie, or an amazon leadership principle. \n" +
-                "For example, for the puzzle: \"hay. reap. otter.\", the solution is: \"the movie Harry Potter\". \n" +
-                "For the puzzle: \"Thud. Oven. Cheek. Ode.\", the solution is \"The Da-Vinci Code\" <break time=\"0.8s\"/> \n" +
-                "You can say \"repeat\", \"go back\"";
-        String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].questionPeriods(speed[(int) session.getAttribute(SPEED_INDEX)]);
-        speechText += repromptText;
-        return getSpeechletResponse(speechText, repromptText, true);
-    }
-
-    private SpeechletResponse handleRepeat(Session session) {
-        //String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].getEnrichedSpeech(REPEATMSECS);
-    	String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].questionPeriods(speed[(int) session.getAttribute(SPEED_INDEX)]);
-        String speechText = repromptText;
-        return getSpeechletResponse(speechText, repromptText, true);
-	}
-
-	private SpeechletResponse handleDontKnow(Intent intent, Session session) {
-        String repromptText = getGabText(session);
-        String speechText = repromptText;
-        return getSpeechletResponse(speechText, repromptText, true);
+	@Override
+	public void onSessionStarted(SpeechletRequestEnvelope<SessionStartedRequest> requestEnvelope) {
+		// log.info("onSessionStarted requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
+		//       requestEnvelope.getSession().getSessionId());
+		// any initialization logic goes here
 	}
 
 	@Override
-    public void onSessionEnded(SpeechletRequestEnvelope<SessionEndedRequest> requestEnvelope) {
-        //log.info("onSessionEnded requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
-          //      requestEnvelope.getSession().getSessionId());
-    }
- 
+	public SpeechletResponse onLaunch(SpeechletRequestEnvelope<LaunchRequest> requestEnvelope) {
+		//log.info("onLaunch requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
+		Session session = requestEnvelope.getSession();
+		session.setAttribute("Played","0");
+		session.setAttribute("Correct","0");
+		return getWelcomeResponse(requestEnvelope.getSession());
+	}
+
+	@Override
+	public SpeechletResponse onIntent(SpeechletRequestEnvelope<IntentRequest> requestEnvelope) {
+		IntentRequest request = requestEnvelope.getRequest();
+		Session session = requestEnvelope.getSession();
+		//log.info("onIntent requestId={}, sessionId={}", request.getRequestId(), session);
+
+		// Get intent from the request object.
+		Intent intent = request.getIntent();
+		String intentName = (intent != null) ? intent.getName() : null;
+
+		// Note: If the session is started with an intent, no welcome message will be rendered;
+		// rather, the intent specific response will be returned.
+		if ("AnswerIntent".equals(intentName)) {
+			return handleAnswerIntent(intent, session);
+		} else if ("DontKnowIntent".equals(intentName)) {
+			return handleDontKnow(intent, session);
+		} else if ("AMAZON.RepeatIntent".equals(intentName)) {
+			return handleRepeat(session);
+		} else if ("AMAZON.StopIntent".equals(intentName)) {
+			return handleStop(session);
+		} else if ("AMAZON.StartOverIntent".equals(intentName)) {
+			return getWelcomeResponse(session);
+		}
+		else if ("AMAZON.HelpIntent".equals(intentName)){
+			return getHelpResponse(session);
+		}
+		else {
+			String errorSpeech = intentName + " is unsupported.  Please try something else.";
+			return getSpeechletResponse(errorSpeech, errorSpeech, true);
+		}
+	}
+
+	private SpeechletResponse handleStop(Session session) {
+		Map<String, Object> attributes = session.getAttributes();
+		Integer played = (Integer)attributes.getOrDefault("Played", 0);
+		Integer correct = (Integer)attributes.getOrDefault("Correct", 0);
+
+		Integer score = played > 0 ? correct * 100 / played : 0;
+		return getSpeechletResponse(String.format("Your Score is %d out of 100", score), null, false);
+	}
+	private SpeechletResponse getHelpResponse(Session session) {
+		String speechText = 
+				"I will ask you a mad gab puzzle, consisting of simple words. These words, when <w role=\"amazon:VBD\">read</w> out loud, make up a name of a movie, or an amazon leadership principle. \n" +
+						"For example, for the puzzle: \"hay. reap. otter.\", the solution is: \"the movie Harry Potter\". \n" +
+						"For the puzzle: \"Thud. Oven. Cheek. Ode.\", the solution is \"The Da-Vinci Code\" <break time=\"0.8s\"/> \n" +
+						"You can say \"repeat\", \"go back\"";
+		String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].questionPeriods(speed[(int) session.getAttribute(SPEED_INDEX)],(int) session.getAttribute(SPEED_INDEX));
+		speechText += repromptText;
+		return getSpeechletResponse(speechText, repromptText, true);
+	}
+
+	private SpeechletResponse handleRepeat(Session session) {
+		//String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].getEnrichedSpeech(REPEATMSECS);
+		String repromptText = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].questionPeriods(speed[(int) session.getAttribute(SPEED_INDEX)],(int) session.getAttribute(SPEED_INDEX));
+		String speechText = repromptText;
+		return getSpeechletResponse(speechText, repromptText, true);
+	}
+
+	private SpeechletResponse handleDontKnow(Intent intent, Session session) {
+		String repromptText = getGabText(session);
+		String speechText = repromptText;
+		return getSpeechletResponse(speechText, repromptText, true);
+	}
+
+	@Override
+	public void onSessionEnded(SpeechletRequestEnvelope<SessionEndedRequest> requestEnvelope) {
+		//log.info("onSessionEnded requestId={}, sessionId={}", requestEnvelope.getRequest().getRequestId(),
+		//      requestEnvelope.getSession().getSessionId());
+	}
+
 	public final Random r = new Random(306054743L);
-	
-    String getGabText(Session session){
+
+	String getGabText(Session session){
 		int gabIndex = r.nextInt(gabs.length);		
-    	Gab gab  = gabs[gabIndex];
-          session.setAttribute(GAB_INDEX, gabIndex);
-          session.setAttribute(SPEED_INDEX, 0);
-        return "Here's your next puzzle:\n\r " + gab.questionPeriods(speed[(int) session.getAttribute(SPEED_INDEX)]) + "<break time=\"2s\"/>";
-    	
-    }
-    
-    /**
-     * Creates and returns a {@code SpeechletResponse} with a welcome message.
-     * @param session 
-     *
-     * @return SpeechletResponse spoken and visual welcome message
-     */
-    private SpeechletResponse getWelcomeResponse(Session session) {
-        // Create the welcome message.
-		
-    	
-        String repromptText = getGabText(session);
-        String speechText = "Welcome to Mad Gab, " +repromptText;
-        return getSpeechletResponse(speechText, repromptText, true);
-    }
+		Gab gab  = gabs[gabIndex];
+		session.setAttribute(GAB_INDEX, gabIndex);
+		session.setAttribute(SPEED_INDEX, 0);
+		return "Here's your next puzzle:\n\r " + gab.questionPeriods(speed[(int) session.getAttribute(SPEED_INDEX)],(int) session.getAttribute(SPEED_INDEX)) + "<break time=\"2s\"/>";
 
-    /**
-     * Creates a {@code SpeechletResponse} for the intent and stores the extracted color in the
-     * Session.
-     *
-     * @param intent
-     *            intent for the request
-     * @param dontknow 
-     * @return SpeechletResponse spoken and visual response the given intent
-     */
-    private SpeechletResponse handleAnswerIntent(final Intent intent, final Session session) {
-        // Get the slots from the intent.
-        Map<String, Slot> slots = intent.getSlots();
+	}
 
-        Slot answerSlot = slots.values().stream().filter(u-> u!= null && u.getValue() != null).findFirst().orElse(null);
-        // Get the color slot from the list of slots.
-        String speechText, repromptText;
+	/**
+	 * Creates and returns a {@code SpeechletResponse} with a welcome message.
+	 * @param session 
+	 *
+	 * @return SpeechletResponse spoken and visual welcome message
+	 */
+	private SpeechletResponse getWelcomeResponse(Session session) {
+		// Create the welcome message.
 
-        // Check for favorite color and create output to user.
-        if (answerSlot != null) {
-            // Store the user's favorite color in the Session and create response.
-        	
-            String answer = answerSlot.getValue();
-            if("stop".equals(answer)) {
-            	return handleStop(session);
-            }
-            
-            if("help".equals(answer)) {
-            	return getHelpResponse(session);
-            }
-            
-            if("faster".equals(answer)) {
-            	return getFasterResponse(session);
-            }
-            
-            if(answer == null) {
-            	answer = "nothing";
-            }
-            speechText = "";
-            String correctAnswer = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].answer;
-            String correctString = correctAnswer.replaceAll("//s+", "");
-            String answerTrimmed = answer.replaceAll("//s+", "");
 
-            session.setAttribute("Played", (Integer)session.getAttribute("Played") + 1);
+		String repromptText = getGabText(session);
+		String speechText = "Welcome to Mad Gab, " +repromptText;
+		return getSpeechletResponse(speechText, repromptText, true);
+	}
 
-            if(minDistance(correctString,answerTrimmed) <=1) {
-                session.setAttribute("Correct", (Integer)session.getAttribute("Correct") + 1);
-            	log.info("correct! received: " + answer+ " correct answer: " + correctAnswer);	
-            	speechText += "Correct! ";
-            } else {
-            	log.info("wrong! received: " + answer+ ". correct answer: " + correctAnswer);
-            	speechText += "Wrong! You said " +answer +". The answer was " + correctAnswer+". ";
-            }
-            
-            
-            repromptText = getGabText(session);
-            
-            speechText += repromptText;
+	/**
+	 * Creates a {@code SpeechletResponse} for the intent and stores the extracted color in the
+	 * Session.
+	 *
+	 * @param intent
+	 *            intent for the request
+	 * @param dontknow 
+	 * @return SpeechletResponse spoken and visual response the given intent
+	 */
+	private SpeechletResponse handleAnswerIntent(final Intent intent, final Session session) {
+		// Get the slots from the intent.
+		Map<String, Slot> slots = intent.getSlots();
 
-        } else {
-            speechText = "Try answering the puzzle";
-            repromptText =
-                    "Try answering the puzzle, you can skip this puzzle by saying skip";
-        }
+		Slot answerSlot = slots.values().stream().filter(u-> u!= null && u.getValue() != null).findFirst().orElse(null);
+		// Get the color slot from the list of slots.
+		String speechText, repromptText;
 
-        return getSpeechletResponse(speechText, repromptText, true);
-    }
-    
-    
-    private SpeechletResponse getFasterResponse(Session session) {
-    	int speed = (int) session.getAttribute(SPEED_INDEX);
-    	if(speed <2) {
-    		speed++;
-    	}
+		// Check for favorite color and create output to user.
+		if (answerSlot != null) {
+			// Store the user's favorite color in the Session and create response.
+
+			String answer = answerSlot.getValue();
+			if("stop".equals(answer)) {
+				return handleStop(session);
+			}
+
+			if("help".equals(answer)) {
+				return getHelpResponse(session);
+			}
+
+			if("faster".equals(answer)) {
+				return getFasterResponse(session);
+			}
+
+			if(answer == null) {
+				answer = "nothing";
+			}
+			speechText = "";
+			String correctAnswer = gabs[Integer.parseInt(session.getAttribute(GAB_INDEX).toString())].answer;
+			String correctString = correctAnswer.replaceAll("//s+", "");
+			String answerTrimmed = answer.replaceAll("//s+", "");
+
+			session.setAttribute("Played",  Integer.parseInt(session.getAttribute("Played").toString()) + 1);
+
+			if(minDistance(correctString,answerTrimmed) <=2) {
+				session.setAttribute("Correct", Integer.parseInt(session.getAttribute("Correct").toString()) + 1);
+				log.info("correct! received: " + answer+ " correct answer: " + correctAnswer);	
+				speechText += "Correct! ";
+			} else {
+				log.info("wrong! received: " + answer+ ". correct answer: " + correctAnswer);
+				speechText += "Wrong! You said " +answer +". The answer was " + correctAnswer+". ";
+			}
+
+
+			repromptText = getGabText(session);
+
+			speechText += repromptText;
+
+		} else {
+			speechText = "Try answering the puzzle";
+			repromptText =
+					"Try answering the puzzle, you can skip this puzzle by saying skip";
+		}
+
+		return getSpeechletResponse(speechText, repromptText, true);
+	}
+
+
+	private SpeechletResponse getFasterResponse(Session session) {
+		int speed = (int) session.getAttribute(SPEED_INDEX);
+		if(speed <2) {
+			speed++;
+		}
 		session.setAttribute(SPEED_INDEX, speed );
 		return handleRepeat(session);
 	}
 
 	public static int minDistance(String word1, String word2) {
-    	int len1 = word1.length();
-    	int len2 = word2.length();
-     
-    	// len1+1, len2+1, because finally return dp[len1][len2]
-    	int[][] dp = new int[len1 + 1][len2 + 1];
-     
-    	for (int i = 0; i <= len1; i++) {
-    		dp[i][0] = i;
-    	}
-     
-    	for (int j = 0; j <= len2; j++) {
-    		dp[0][j] = j;
-    	}
-     
-    	//iterate though, and check last char
-    	for (int i = 0; i < len1; i++) {
-    		char c1 = word1.charAt(i);
-    		for (int j = 0; j < len2; j++) {
-    			char c2 = word2.charAt(j);
-     
-    			//if last two chars equal
-    			if (c1 == c2) {
-    				//update dp value for +1 length
-    				dp[i + 1][j + 1] = dp[i][j];
-    			} else {
-    				int replace = dp[i][j] + 1;
-    				int insert = dp[i][j + 1] + 1;
-    				int delete = dp[i + 1][j] + 1;
-     
-    				int min = replace > insert ? insert : replace;
-    				min = delete > min ? min : delete;
-    				dp[i + 1][j + 1] = min;
-    			}
-    		}
-    	}
-     
-    	return dp[len1][len2];
-    }
+		int len1 = word1.length();
+		int len2 = word2.length();
+
+		// len1+1, len2+1, because finally return dp[len1][len2]
+		int[][] dp = new int[len1 + 1][len2 + 1];
+
+		for (int i = 0; i <= len1; i++) {
+			dp[i][0] = i;
+		}
+
+		for (int j = 0; j <= len2; j++) {
+			dp[0][j] = j;
+		}
+
+		//iterate though, and check last char
+		for (int i = 0; i < len1; i++) {
+			char c1 = word1.charAt(i);
+			for (int j = 0; j < len2; j++) {
+				char c2 = word2.charAt(j);
+
+				//if last two chars equal
+				if (c1 == c2) {
+					//update dp value for +1 length
+					dp[i + 1][j + 1] = dp[i][j];
+				} else {
+					int replace = dp[i][j] + 1;
+					int insert = dp[i][j + 1] + 1;
+					int delete = dp[i + 1][j] + 1;
+
+					int min = replace > insert ? insert : replace;
+					min = delete > min ? min : delete;
+					dp[i + 1][j + 1] = min;
+				}
+			}
+		}
+
+		return dp[len1][len2];
+	}
 
 
-    /**
-     * Returns a Speechlet response for a speech and reprompt text.
-     */
-    private SpeechletResponse getSpeechletResponse(String speechText, String repromptText,
-            boolean isAskResponse) {
-        // Create the Simple card content.
-        SimpleCard card = new SimpleCard();
-        card.setTitle("Mad Gab");
-        card.setContent(speechText.replaceAll("<[^>]*>", ""));
+	/**
+	 * Returns a Speechlet response for a speech and reprompt text.
+	 */
+	private SpeechletResponse getSpeechletResponse(String speechText, String repromptText,
+			boolean isAskResponse) {
+		// Create the Simple card content.
+		SimpleCard card = new SimpleCard();
+		card.setTitle("Mad Gab");
+		card.setContent(speechText.replaceAll("<[^>]*>", " ").trim());
 
-        // Create the plain text output.
-        SsmlOutputSpeech speech = new SsmlOutputSpeech();
-        speech.setSsml("<speak>" + speechText +"</speak>");
+		// Create the plain text output.
+		SsmlOutputSpeech speech = new SsmlOutputSpeech();
+		speech.setSsml("<speak>" + speechText +"</speak>");
 
-        if (isAskResponse) {
-            // Create reprompt
-        	SsmlOutputSpeech repromptSpeech = new SsmlOutputSpeech();
-            repromptSpeech.setSsml("<speak>" + repromptText+"</speak>");
-            Reprompt reprompt = new Reprompt();
-            reprompt.setOutputSpeech(repromptSpeech);
+		if (isAskResponse) {
+			// Create reprompt
+			SsmlOutputSpeech repromptSpeech = new SsmlOutputSpeech();
+			repromptSpeech.setSsml("<speak>" + repromptText+"</speak>");
+			Reprompt reprompt = new Reprompt();
+			reprompt.setOutputSpeech(repromptSpeech);
 
-            return SpeechletResponse.newAskResponse(speech, reprompt, card);
+			return SpeechletResponse.newAskResponse(speech, reprompt, card);
 
-        } else {
-            return SpeechletResponse.newTellResponse(speech, card);
-        }
-    }
+		} else {
+			return SpeechletResponse.newTellResponse(speech, card);
+		}
+	}
 }

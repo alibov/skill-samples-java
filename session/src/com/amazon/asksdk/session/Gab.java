@@ -15,8 +15,9 @@ public class Gab {
 	}
 	
 	final static Pattern spaces = Pattern.compile("\\s+");
-	public String questionPeriods(String speed){
-		return "<prosody rate=\""+speed+"\">"+Arrays.stream(spaces.split(question)).collect(Collectors.joining(". "))+"</prosody>";
+	public String questionPeriods(String speed,int speedIndex){
+		return "<prosody rate=\""+speed+"\">"+Arrays.stream(spaces.split(question)).
+				collect(Collectors.joining(String.format("<break time=\"%dms\"/>", (2-speedIndex)*50)))+"</prosody>";
 	}
 	
 	public String getEnrichedSpeech(int milisecondsBreakTime) {
