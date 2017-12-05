@@ -96,7 +96,11 @@ public class SessionSpeechlet implements SpeechletV2 {
         	return handleStop();
         } else if ("AMAZON.StartOverIntent".equals(intentName)) {
         	return getWelcomeResponse(session);
-        } else {
+        }
+        else if ("AMAZON.HelpIntent".equals(intentName)){
+            return getHelpResponse(session);
+        }
+        else {
             String errorSpeech = intentName + " is unsupported.  Please try something else.";
             return getSpeechletResponse(errorSpeech, errorSpeech, true);
         }
@@ -105,6 +109,16 @@ public class SessionSpeechlet implements SpeechletV2 {
 	private SpeechletResponse handleStop() {
 		return getSpeechletResponse("Your Score is 0", null, false);
 	}
+    private SpeechletResponse getHelpResponse(Session session) {
+        String speechText = 
+                "I will ask you a mad gab puzzle, consisting of simple words. These words, when <w role=\"amazon:VBD\">read</w> out loud, make up a name of a movie, or an amazon leadership principle. \n" +
+                "For example, for the puzzle: \"hay. reap. otter.\", the solution is: \"the movie Harry Potter\". \n" +
+                "For the puzzle: \"Thud. Oven. Cheek. Ode.\", the solution is \"The Da-Vinci Code\" <break time=\"0.8s\"/> \n" +
+                "You can say \"repeat\", \"go back\"";
+        String repromptText = session.getAttribute(QUESTION_KEY).toString();
+        speechText += repromptText;
+        return getSpeechletResponse(speechText, repromptText, true);
+    }
 
     private SpeechletResponse handleRepeat(Intent intent, Session session) {
         String repromptText = session.getAttribute(QUESTION_KEY).toString();
@@ -211,7 +225,7 @@ public class SessionSpeechlet implements SpeechletV2 {
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
         card.setTitle("Mad Gab");
-        card.setContent(speechText.replaceAll("<break\b[^>]*>(.*?)</break>", ""));
+        card.setContent(speechText.replaceAll("<break\b[^>]*>.*?</break>", ""));
 
         // Create the plain text output.
         SsmlOutputSpeech speech = new SsmlOutputSpeech();
